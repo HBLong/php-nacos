@@ -11,6 +11,8 @@ namespace alibaba\nacos\model;
  */
 abstract class Model
 {
+    protected $params = [];
+
     /**
      * @param $instanceJson
      * @return Model | Instance | InstanceList | Beat | Host
@@ -19,7 +21,10 @@ abstract class Model
     {
         $instance = new static();
         foreach (json_decode($instanceJson) as $propertyName => $propertyValue) {
-            $instance->{"set" . ucfirst($propertyName)}($propertyValue);
+            $instance->params[$propertyName] = $propertyValue;
+            if (method_exists($instance, 'set' . ucfirst($propertyName))) {
+                $instance->{'set' . ucfirst($propertyName)}($propertyValue);
+            }
         }
         return $instance;
     }
@@ -30,5 +35,25 @@ abstract class Model
     public function encode()
     {
         return json_encode(get_object_vars($this));
+    }
+
+    /**
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getParam(string $key, $default = null)
+    {
+        return method_exists($this, 'set' . ucfirst($key))
+            ? $this->{'set' . ucfirst($key)}()
+            : ($this->params[$key] ?? $default);
+    }
+
+    /**
+     * @return array
+     */
+    public function getParams(): array
+    {
+        return $this->params;
     }
 }
